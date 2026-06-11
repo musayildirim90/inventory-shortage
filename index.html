@@ -198,19 +198,39 @@ async function fetchAllPages(endpoint, onProgress, label) {
   let apiTotal = null;
 
   do {
-    const path = nextToken
-      ? `/api4/${endpoint}?PageSize=50&next_page_token=${encodeURIComponent(nextToken)}`
-      : `/api4/${endpoint}?PageSize=50`;
+    // Build path — on subsequent pages use the full next href from _links.next
+    let path;
+    if (nextToken) {
+      // nextToken may be a full path like /api4/endpoint?PageSize=50&next_page_token=xxx
+      // or just the token value — handle both
+      if (nextToken.startsWith('/')) {
+        path = nextToken; // already a full path
+      } else {
+        path = `/api4/${endpoint}?PageSize=50&next_page_token=${encodeURIComponent(nextToken)}`;
+      }
+    } else {
+      path = `/api4/${endpoint}?PageSize=50`;
+    }
 
     const data = await postMessageWithResponse({ type: 'api-request', method: 'GET', path });
 
+    // Manager.io wraps records in data.items array
     const page = Array.isArray(data) ? data : (data.items || data.data || []);
     allItems.push(...page);
 
-    nextToken = data.next_page_token || data.nextPageToken || data._links?.next?.href || null;
+    // Manager.io pagination: next page link is in _links.next.href
+    // It can also be a direct next_page_token field
+    const nextHref = data?._links?.next?.href || null;
+    const nextDirect = data?.next_page_token || data?.nextPageToken || null;
+    nextToken = nextHref || nextDirect || null;
 
+    // Get total count from _summary if available
     if (apiTotal === null) {
-      apiTotal = data.totalCount ?? data.total ?? data.count ?? data._summary?.totalLoaded ?? null;
+      apiTotal = data?._summary?.totalLoaded
+        ?? data?.totalCount
+        ?? data?.total
+        ?? data?.count
+        ?? null;
     }
 
     pageNum++;
