@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>تقرير نواقص المخزون - مُحسَّن</title>
+<title>تقرير نواقص المخزون - النسخة النهائية</title>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background:#f0f4f8; color:#1a202c; min-height:100vh; padding:20px; direction:rtl; }
@@ -24,8 +24,9 @@
   }
   .load-btn:hover:not(:disabled) { background:#2b6cb0; }
   .load-btn:disabled { opacity:.5; cursor:not-allowed; }
+  .period-select { padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:13px; background:#f7fafc; cursor:pointer; }
   .prog-wrap { flex:1; min-width:80px; height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden; }
-  .prog-bar  { height:100%; width:0%; background:#3182ce; border-radius:3px; transition:width .3s; }
+  .prog-bar { height:100%; width:0%; background:#3182ce; border-radius:3px; transition:width .3s; }
   .status-txt { font-size:12px; color:#718096; white-space:nowrap; }
 
   .cards { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px; }
@@ -36,7 +37,7 @@
   }
   .card-label { font-size:11px; color:#718096; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
   .card-value { font-size:24px; font-weight:800; color:#2d3748; }
-  .card-value.red  { color:#e53e3e; }
+  .card-value.red { color:#e53e3e; }
   .card-value.orange { color:#dd6b20; }
   .card-value.blue { color:#3182ce; }
 
@@ -45,16 +46,14 @@
     background:#fff; border:1px solid #e2e8f0; border-radius:10px;
     padding:10px 16px; box-shadow:0 1px 3px rgba(0,0,0,.06);
   }
-  .search-bar input {
-    flex:1; border:none; outline:none; font-size:14px; background:transparent; direction:rtl;
-  }
+  .search-bar input { flex:1; border:none; outline:none; font-size:14px; background:transparent; direction:rtl; }
   .search-bar span { color:#a0aec0; font-size:16px; }
 
   .table-wrap {
     background:#fff; border-radius:12px; border:1px solid #e2e8f0;
     box-shadow:0 1px 3px rgba(0,0,0,.06); overflow-x:auto;
   }
-  table { width:100%; border-collapse:collapse; font-size:13px; min-width:600px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; min-width:650px; }
   thead { background:#f7fafc; }
   th {
     padding:12px 16px; text-align:right; font-weight:700;
@@ -63,7 +62,6 @@
     white-space:nowrap; cursor:pointer; user-select:none;
   }
   th:hover { background:#edf2f7; }
-  th.sorted { color:#3182ce; }
   td { padding:11px 16px; border-bottom:1px solid #f0f4f8; vertical-align:middle; }
   tr:last-child td { border-bottom:none; }
   tr:hover td { background:#f7fafc; }
@@ -73,36 +71,53 @@
     padding:4px 10px; border-radius:20px; font-size:12px; font-weight:700;
   }
   .badge.critical { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
-  .badge.warning  { background:#fffaf0; color:#c05621; border:1px solid #fbd38d; }
-  .badge.low      { background:#fffff0; color:#975a16; border:1px solid #faf089; }
+  .badge.warning { background:#fffaf0; color:#c05621; border:1px solid #fbd38d; }
+  .badge.low { background:#fffff0; color:#975a16; border:1px solid #faf089; }
 
-  .stock-bar-wrap { width:80px; height:6px; background:#e2e8f0; border-radius:3px; display:inline-block; vertical-align:middle; margin-right:8px; }
+  .stock-bar-wrap { width:80px; height:6px; background:#e2e8f0; border-radius:3px; display:inline-block; vertical-align:middle; margin-left:8px; }
   .stock-bar { height:100%; border-radius:3px; background:#e53e3e; }
 
   .empty-state { text-align:center; padding:60px 20px; color:#a0aec0; }
   .err-box { color:#c53030; background:#fff5f5; border:1px solid #fed7d7; border-radius:10px; padding:14px 18px; font-size:13px; margin-bottom:16px; display:none; }
   .footer-info { font-size:11px; color:#a0aec0; text-align:left; padding:10px 16px; border-top:1px solid #f0f4f8; }
   .loading-msg { text-align:center; padding:40px; color:#718096; font-size:14px; }
+  .step { padding:4px 0; font-size:12px; }
+  .step.done { color:#276749; }
+  .step.active { color:#2b6cb0; font-weight:bold; }
+  .steps-box { background:#ebf8ff; border:1px solid #bee3f8; border-radius:10px; padding:12px 16px; margin-bottom:16px; display:none; }
 </style>
 </head>
 <body>
 
-<h1>📦 تقرير نواقص المخزون (المُحسَّن)</h1>
-<p class="subtitle">المنتجات التي يقل مخزونها عن مبيعات آخر 30 يوم — مرتبة حسب الأكثر نقصاً</p>
+<h1>📦 تقرير نواقص المخزون</h1>
+<p class="subtitle">يحسب النقص = مبيعات آخر 30 يوم - المخزون الحالي (qtyOnHand)</p>
 
 <div class="ctrl-bar">
   <button class="load-btn" id="load-btn">⬇ تحميل البيانات</button>
+  <select class="period-select" id="period-select">
+    <option value="7">آخر 7 أيام</option>
+    <option value="14">آخر 14 يوم</option>
+    <option value="30" selected>آخر 30 يوم</option>
+    <option value="60">آخر 60 يوم</option>
+    <option value="90">آخر 90 يوم</option>
+  </select>
   <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
   <span class="status-txt" id="status-txt">اضغط تحميل لجلب البيانات</span>
+</div>
+
+<div class="steps-box" id="steps-box">
+  <div class="step" id="step1">⏳ 1. جلب أصناف المخزون...</div>
+  <div class="step" id="step2">⏳ 2. جلب فواتير المبيعات...</div>
+  <div class="step" id="step3">⏳ 3. تحليل البيانات...</div>
 </div>
 
 <div class="err-box" id="err-box"></div>
 
 <div class="cards" id="cards" style="display:none">
-  <div class="card"><div class="card-label">إجمالي المنتجات الناقصة</div><div class="card-value red" id="c-total">0</div></div>
+  <div class="card"><div class="card-label">المنتجات الناقصة</div><div class="card-value red" id="c-total">0</div></div>
   <div class="card"><div class="card-label">أشد نقص (وحدات)</div><div class="card-value orange" id="c-max">0</div></div>
-  <div class="card"><div class="card-label">إجمالي وحدات ناقصة</div><div class="card-value red" id="c-sum">0</div></div>
-  <div class="card"><div class="card-label">فترة التحليل</div><div class="card-value blue" style="font-size:16px">آخر 30 يوم</div></div>
+  <div class="card"><div class="card-label">إجمالي الوحدات الناقصة</div><div class="card-value red" id="c-sum">0</div></div>
+  <div class="card"><div class="card-label">فترة التحليل</div><div class="card-value blue" style="font-size:16px" id="c-period">—</div></div>
 </div>
 
 <div class="search-bar" id="search-bar" style="display:none">
@@ -113,44 +128,35 @@
 <div class="table-wrap" id="table-wrap" style="display:none">
   <table>
     <thead>
-      <tr><th onclick="sortBy('rank')">#</th><th onclick="sortBy('name')">اسم المنتج</th><th onclick="sortBy('code')">الكود</th>
-      <th onclick="sortBy('stock')">المخزون الحالي</th><th onclick="sortBy('sold')">مبيعات 30 يوم</th>
-      <th onclick="sortBy('shortage')" class="sorted">⬇ النقص</th><th>مستوى النقص</th></tr>
+      <tr><th>#</th><th onclick="sortBy('name')">اسم المنتج</th><th onclick="sortBy('code')">الكود</th>
+        <th onclick="sortBy('stock')">المخزون الحالي</th><th onclick="sortBy('sold')">مبيعات الفترة</th>
+        <th onclick="sortBy('shortage')">النقص</th><th>مستوى الخطر</th></tr>
     </thead>
     <tbody id="tbody"></tbody>
   </table>
   <div class="footer-info" id="footer-info"></div>
 </div>
-<div id="app"></div>
 
 <script>
-/* ------------------------------------------------------------
-   Helper: توليد معرف فريد للطلبات (بديل crypto.randomUUID)
------------------------------------------------------------- */
+// Helper لتوليد ID فريد
 function generateId() {
-  return 'id-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  return 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
 }
 
-/* ------------------------------------------------------------
-   postMessage مع دعم قراءة الرؤوس (next_page_token)
-   نعيد response ككائن { body, headers }
------------------------------------------------------------- */
+// postMessage مع دعم قراءة الرؤوس
 function postMessageWithResponse(message) {
   return new Promise((resolve, reject) => {
     const requestId = generateId();
     const timer = setTimeout(() => {
       window.removeEventListener('message', handler);
-      reject(new Error('انتهت المهلة (30 ثانية) — تأكد أن الإضافة تعمل داخل Manager.io'));
+      reject(new Error('انتهت المهلة (30 ثانية)'));
     }, 30000);
 
     function handler(event) {
       if (event.data?.type?.endsWith('-response') && event.data?.requestId === requestId) {
         clearTimeout(timer);
         window.removeEventListener('message', handler);
-        // نعيد الجسم والرؤوس إذا كانت موجودة
-        const body = event.data.body;
-        const headers = event.data.headers || {};
-        resolve({ body, headers });
+        resolve({ body: event.data.body, headers: event.data.headers || {} });
       }
     }
     window.addEventListener('message', handler);
@@ -158,306 +164,277 @@ function postMessageWithResponse(message) {
   });
 }
 
-/* ------------------------------------------------------------
-   جلب جميع الصفحات مع دعم next_page_token من الرأس X-Next-Page-Token
-   نمرر endpoint (مثال: 'inventory-item?expand=quantity')
------------------------------------------------------------- */
+// جلب جميع الصفحات باستخدام next_page_token الصحيح من Manager
 async function fetchAllPages(endpoint, onProgress, label) {
   const allItems = [];
   let nextToken = null;
   let pageNum = 0;
-  let totalCount = null;
 
   do {
-    const path = nextToken
-      ? `${endpoint}&next_page_token=${encodeURIComponent(nextToken)}`
-      : endpoint;
+    const path = nextToken 
+      ? `/api4/${endpoint}?PageSize=100&next_page_token=${encodeURIComponent(nextToken)}`
+      : `/api4/${endpoint}?PageSize=100`;
+    
     const { body, headers } = await postMessageWithResponse({ type: 'api-request', method: 'GET', path });
-
+    
     const page = Array.isArray(body) ? body : (body.items || body.data || []);
     allItems.push(...page);
-
+    
     // قراءة التوكين من الرأس (الطريقة الصحيحة في Manager)
     nextToken = headers['X-Next-Page-Token'] || headers['x-next-page-token'] || null;
-    if (!nextToken && body.next_page_token) nextToken = body.next_page_token;
-
-    if (totalCount === null && body.totalCount !== undefined) totalCount = body.totalCount;
-    if (totalCount === null && body.total !== undefined) totalCount = body.total;
-    if (totalCount === null && body.count !== undefined) totalCount = body.count;
-
+    
     pageNum++;
-    if (onProgress) {
-      const loaded = allItems.length;
-      const total = totalCount || loaded;
-      onProgress(loaded, total, pageNum, label);
-    }
+    if (onProgress) onProgress(allItems.length, pageNum);
+    
     if (pageNum > 500) break;
   } while (nextToken);
-
+  
   return allItems;
 }
 
-/* ------------------------------------------------------------
-   الحالة العامة
------------------------------------------------------------- */
-let allShortages = [];         // جميع المنتجات الناقصة (بدون تصفية)
-let filteredShortages = [];    // المنتجات بعد التصفية (للعرض)
+// حالة التطبيق
+let allShortages = [];
 let currentSort = { key: 'shortage', dir: -1 };
-let currentSearchQuery = '';
+let currentFiltered = [];
 
-/* ------------------------------------------------------------
-   إخفاء أقسام النتائج
------------------------------------------------------------- */
-function hideResults() {
-  document.getElementById('cards').style.display = 'none';
-  document.getElementById('search-bar').style.display = 'none';
-  document.getElementById('table-wrap').style.display = 'none';
+function setStep(n, state, text) {
+  const el = document.getElementById('step' + n);
+  const icon = state === 'done' ? '✅' : state === 'active' ? '🔄' : '⏳';
+  el.className = 'step ' + state;
+  if (text) el.textContent = `${icon} ${n}. ${text}`;
+  else el.textContent = `${icon} ${n}. ${el.textContent.replace(/^[^.]*\./, '')}`;
 }
 
-/* ------------------------------------------------------------
-   دالة التحميل الرئيسية
------------------------------------------------------------- */
 async function loadAllData() {
   const btn = document.getElementById('load-btn');
   const bar = document.getElementById('prog-bar');
   const status = document.getElementById('status-txt');
   const errBox = document.getElementById('err-box');
-
+  const days = parseInt(document.getElementById('period-select').value, 10);
+  
   btn.disabled = true;
   btn.textContent = 'جاري التحميل...';
-  bar.style.width = '5%';
+  bar.style.width = '2%';
   errBox.style.display = 'none';
-  hideResults();
-  document.getElementById('app').innerHTML = `<div class="loading-msg">⏳ جاري تحميل بيانات المخزون والفواتير...</div>`;
-
+  document.getElementById('steps-box').style.display = 'block';
+  document.getElementById('cards').style.display = 'none';
+  document.getElementById('search-bar').style.display = 'none';
+  document.getElementById('table-wrap').style.display = 'none';
+  
+  setStep(1, 'pending', 'جلب أصناف المخزون...');
+  setStep(2, 'pending', 'جلب فواتير المبيعات...');
+  setStep(3, 'pending', 'تحليل البيانات...');
+  
   try {
-    // 1. تحميل المنتجات مع الكميات الفعلية (استخدام expand=quantity)
-    status.textContent = 'جاري تحميل المنتجات والمخزون...';
-    const inventoryItems = await fetchAllPages(
-      'inventory-item?expand=quantity',
-      (loaded, total, page) => {
-        status.textContent = `المنتجات: ${loaded.toLocaleString()} (صفحة ${page})`;
-        bar.style.width = Math.min(40, 5 + (page * 1.5)) + '%';
-      },
-      'inventory'
-    );
-
-    // بناء خريطة للمنتجات: key → { name, code, stock, unit }
+    // الخطوة 1: جلب المنتجات مع الكميات الفعلية
+    setStep(1, 'active', 'جلب أصناف المخزون...');
+    status.textContent = 'جاري جلب المنتجات...';
+    
+    const inventoryItems = await fetchAllPages('inventory-item?expand=quantity', (count) => {
+      bar.style.width = Math.min(40, 2 + count / 10) + '%';
+      status.textContent = `المنتجات: ${count} صنف`;
+    });
+    
+    // بناء خريطة المنتجات
     const productMap = new Map();
     for (const item of inventoryItems) {
       const key = item.key;
       if (!key) continue;
-      const name = item.itemName || item.nameWithCode || '(بدون اسم)';
-      const code = item.itemCode || '';
-      const unit = item.unitName || 'قطعة';
-      // الكمية الفعلية من expand=quantity
+      
       let stock = 0;
       if (item.quantity && typeof item.quantity.qtyOnHand === 'number') stock = item.quantity.qtyOnHand;
       else if (item.qtyOnHand !== undefined) stock = item.qtyOnHand;
-      else if (item.obsolete_StartingBalance2 !== undefined) stock = item.obsolete_StartingBalance2;
-
-      productMap.set(key, { name, code, unit, stock });
+      
+      productMap.set(key, {
+        name: item.itemName || item.nameWithCode || '(بدون اسم)',
+        code: item.itemCode || '',
+        unit: item.unitName || 'قطعة',
+        stock: stock
+      });
     }
-
-    // 2. تحميل فواتير المبيعات
-    status.textContent = 'جاري تحميل فواتير المبيعات...';
-    const salesInvoices = await fetchAllPages(
-      'sales-invoice-batch',
-      (loaded, total, page) => {
-        status.textContent = `الفواتير: ${loaded.toLocaleString()} (صفحة ${page})`;
-        bar.style.width = Math.min(90, 40 + (page * 1)) + '%';
-      },
-      'invoices'
-    );
-
-    bar.style.width = '95%';
+    
+    setStep(1, 'done', `${productMap.size} صنف`);
+    bar.style.width = '45%';
+    
+    // الخطوة 2: جلب فواتير المبيعات
+    setStep(2, 'active', 'جلب فواتير المبيعات...');
+    status.textContent = 'جاري جلب الفواتير...';
+    
+    const salesInvoices = await fetchAllPages('sales-invoice-batch', (count) => {
+      bar.style.width = Math.min(85, 45 + count / 20) + '%';
+      status.textContent = `الفواتير: ${count} فاتورة`;
+    });
+    
+    setStep(2, 'done', `${salesInvoices.length} فاتورة`);
+    bar.style.width = '90%';
+    
+    // الخطوة 3: التحليل
+    setStep(3, 'active', 'تحليل المبيعات...');
     status.textContent = 'جاري التحليل...';
-    document.getElementById('app').innerHTML = '';
-
-    // 3. تحليل المبيعات لآخر 30 يوم
+    
     const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
-    const salesMap = new Map(); // key → total sold
-
+    cutoff.setDate(cutoff.getDate() - days);
+    
+    // حساب المبيعات لكل منتج
+    const salesMap = new Map();
+    
     for (const invoiceObj of salesInvoices) {
       const inv = invoiceObj.item || invoiceObj;
       const issueDateStr = inv.issueDate;
       if (!issueDateStr) continue;
+      
       const issueDate = new Date(issueDateStr);
       if (issueDate < cutoff) continue;
-
+      
       const lines = inv.lines || inv.invoiceLines || [];
       for (const line of lines) {
         let productKey = line.item;
         if (!productKey) continue;
         if (typeof productKey === 'object' && productKey.key) productKey = productKey.key;
+        
         const qty = parseFloat(line.qty) || 0;
         if (qty <= 0) continue;
+        
         salesMap.set(productKey, (salesMap.get(productKey) || 0) + qty);
       }
     }
-
-    // 4. حساب النواقص
+    
+    // حساب النواقص
     const shortages = [];
-    for (const [key, product] of productMap.entries()) {
-      const sold = salesMap.get(key) || 0;
-      if (sold === 0) continue;
+    for (const [key, sold] of salesMap) {
+      const product = productMap.get(key);
+      if (!product) continue;
+      
       const shortage = sold - product.stock;
       if (shortage <= 0) continue;
+      
       shortages.push({
-        key,
+        key: key,
         name: product.name,
         code: product.code,
         unit: product.unit,
         stock: product.stock,
-        sold30: sold,
+        sold: sold,
         shortage: shortage
       });
     }
-
-    // ترتيب تنازلي حسب النقص
+    
+    // ترتيب حسب الأكثر نقصاً
     shortages.sort((a, b) => b.shortage - a.shortage);
     allShortages = shortages;
-    filteredShortages = [...allShortages];
-    currentSearchQuery = '';
-    document.getElementById('search-input').value = '';
-
-    // عرض النتائج
-    renderResults(filteredShortages);
-
+    currentFiltered = [...allShortages];
+    
+    setStep(3, 'done', `${shortages.length} منتج ناقص`);
     bar.style.width = '100%';
     status.textContent = `✓ تم التحليل — ${productMap.size} منتج، ${salesInvoices.length} فاتورة، ${shortages.length} منتج ناقص`;
     btn.textContent = '↺ تحديث';
     btn.disabled = false;
+    
+    // عرض النتائج
+    displayResults(shortages, productMap.size, salesInvoices.length, days);
+    
   } catch (err) {
     console.error(err);
     bar.style.width = '0%';
     status.textContent = '⚠ فشل التحميل';
     btn.textContent = '↺ إعادة المحاولة';
     btn.disabled = false;
-    const errBox = document.getElementById('err-box');
     errBox.style.display = 'block';
-    errBox.innerHTML = `⚠ ${err.message}<br><small>تأكد من اتصال Manager.io ووجود صلاحيات كافية.</small>`;
-    document.getElementById('app').innerHTML = '';
+    errBox.innerHTML = `⚠ <strong>${err.message}</strong><br><small>تأكد من الاتصال بـ Manager.io وصلاحيات الوصول.</small>`;
+    document.getElementById('steps-box').style.display = 'none';
   }
 }
 
-/* ------------------------------------------------------------
-   عرض النتائج (الإحصائيات والجدول)
------------------------------------------------------------- */
-function renderResults(shortages) {
-  const cardsDiv = document.getElementById('cards');
-  const searchBar = document.getElementById('search-bar');
-  const tableWrap = document.getElementById('table-wrap');
-
-  if (!shortages.length) {
-    document.getElementById('app').innerHTML = `
-      <div class="empty-state">
-        <div class="icon">✅</div>
-        <p>لا توجد نواقص! المخزون كافٍ لتغطية مبيعات آخر 30 يوم.</p>
-      </div>`;
-    cardsDiv.style.display = 'none';
-    searchBar.style.display = 'none';
-    tableWrap.style.display = 'none';
+function displayResults(shortages, totalProducts, totalInvoices, days) {
+  document.getElementById('c-period').textContent = `آخر ${days} يوم`;
+  
+  if (shortages.length === 0) {
+    document.getElementById('table-wrap').style.display = 'block';
+    document.getElementById('tbody').innerHTML = `
+      <tr><td colspan="7">
+        <div class="empty-state">
+          <div class="empty-icon">✅</div>
+          <p>لا توجد نواقص! المخزون كافٍ لتغطية مبيعات آخر ${days} يوم.</p>
+        </div>
+      </td></tr>`;
+    document.getElementById('cards').style.display = 'flex';
+    document.getElementById('c-total').textContent = '0';
+    document.getElementById('c-max').textContent = '0';
+    document.getElementById('c-sum').textContent = '0';
+    document.getElementById('search-bar').style.display = 'none';
     return;
   }
-
+  
   const totalShortage = shortages.reduce((s, r) => s + r.shortage, 0);
-  const maxShortage = shortages[0]?.shortage || 0;
-
   document.getElementById('c-total').textContent = shortages.length.toLocaleString();
-  document.getElementById('c-max').textContent = fmt(maxShortage) + ' ' + (shortages[0]?.unit || '');
+  document.getElementById('c-max').textContent = fmt(shortages[0].shortage) + ' ' + shortages[0].unit;
   document.getElementById('c-sum').textContent = fmt(totalShortage);
-  cardsDiv.style.display = 'flex';
-  searchBar.style.display = 'flex';
-  tableWrap.style.display = 'block';
-
+  
+  document.getElementById('cards').style.display = 'flex';
+  document.getElementById('search-bar').style.display = 'flex';
+  document.getElementById('table-wrap').style.display = 'block';
+  
   renderTable(shortages);
-  document.getElementById('footer-info').innerHTML = `إجمالي المنتجات المحللة: ${allShortages.length} · آخر تحديث: ${new Date().toLocaleString('ar-SY')}`;
+  document.getElementById('footer-info').innerHTML = `إجمالي المنتجات: ${totalProducts} · الفواتير المحللة: ${totalInvoices} · آخر تحديث: ${new Date().toLocaleString('ar-SY')}`;
 }
 
 function renderTable(data) {
   const tbody = document.getElementById('tbody');
-  if (data.length === 0) {
+  if (!data.length) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;">لا توجد نتائج مطابقة للبحث</td></tr>`;
     return;
   }
-
+  
   const maxShortage = data[0]?.shortage || 1;
+  
   tbody.innerHTML = data.map((r, i) => {
     const pct = Math.min(100, Math.round((r.shortage / maxShortage) * 100));
     let level = 'low';
     if (r.shortage >= maxShortage * 0.6) level = 'critical';
     else if (r.shortage >= maxShortage * 0.3) level = 'warning';
-    const levelLabel = level === 'critical' ? '🔴 حرج' : (level === 'warning' ? '🟠 تحذير' : '🟡 منخفض');
-
+    const levelLabel = level === 'critical' ? '🔴 حرج' : level === 'warning' ? '🟠 تحذير' : '🟡 منخفض';
+    
     return `<tr>
-      <td style="color:#a0aec0;font-weight:600">${i+1}</td>
-      <td style="font-weight:600;max-width:220px">${escHtml(r.name)}</td>
-      <td style="color:#718096;font-size:12px">${escHtml(r.code || '—')}</td>
-      <td><span style="font-weight:700;color:${r.stock<=0?'#e53e3e':'#2d3748'}">${fmt(r.stock)}</span> <span style="font-size:11px;">${escHtml(r.unit)}</span></td>
-      <td><span style="font-weight:700;color:#3182ce">${fmt(r.sold30)}</span> <span style="font-size:11px;">${escHtml(r.unit)}</span></td>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="stock-bar-wrap"><div class="stock-bar" style="width:${pct}%"></div></div><span style="font-weight:800;color:#e53e3e">${fmt(r.shortage)}</span> <span style="font-size:11px;">${escHtml(r.unit)}</span></div></td>
+      <td style="color:#a0aec0;font-weight:600">${i + 1}</td>
+      <td style="font-weight:600;max-width:250px;word-break:break-word">${esc(r.name)}</td>
+      <td style="color:#718096;font-size:12px">${esc(r.code || '—')}</td>
+      <td><span style="font-weight:700;color:${r.stock <= 0 ? '#e53e3e' : '#2d3748'}">${fmt(r.stock)}</span> <span style="font-size:11px;color:#a0aec0">${esc(r.unit)}</span></td>
+      <td><span style="font-weight:700;color:#3182ce">${fmt(r.sold)}</span> <span style="font-size:11px;color:#a0aec0">${esc(r.unit)}</span></td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="stock-bar-wrap"><div class="stock-bar" style="width:${pct}%"></div></div><span style="font-weight:800;color:#e53e3e">${fmt(r.shortage)}</span> <span style="font-size:11px;">${esc(r.unit)}</span></div></td>
       <td><span class="badge ${level}">${levelLabel}</span></td>
     </tr>`;
   }).join('');
 }
 
-/* ------------------------------------------------------------
-   التصفية والترتيب (تعملان معاً)
------------------------------------------------------------- */
 function filterTable() {
   const q = document.getElementById('search-input').value.trim().toLowerCase();
-  currentSearchQuery = q;
   if (!q) {
-    filteredShortages = [...allShortages];
-  } else {
-    filteredShortages = allShortages.filter(r => r.name.toLowerCase().includes(q) || (r.code || '').toLowerCase().includes(q));
+    renderTable(allShortages);
+    return;
   }
-  // إعادة ترتيب النتائج المصفاة حسب آخر ترتيب مستخدم
-  applySortToFiltered();
+  const filtered = allShortages.filter(r => 
+    r.name.toLowerCase().includes(q) || (r.code || '').toLowerCase().includes(q)
+  );
+  renderTable(filtered);
 }
 
 function sortBy(key) {
   if (currentSort.key === key) currentSort.dir *= -1;
   else { currentSort.key = key; currentSort.dir = -1; }
-  applySortToFiltered();
-}
-
-function applySortToFiltered() {
-  if (!filteredShortages.length) return;
-  const key = currentSort.key;
-  const dir = currentSort.dir;
-  filteredShortages.sort((a, b) => {
-    let av, bv;
-    if (key === 'name' || key === 'code') {
-      av = (a[key] || '').toLowerCase();
-      bv = (b[key] || '').toLowerCase();
-    } else if (key === 'rank') {
-      // الرتبة تعتمد على الترتيب الأصلي، نستخدم indexOf
-      const idxA = allShortages.findIndex(x => x.key === a.key);
-      const idxB = allShortages.findIndex(x => x.key === b.key);
-      av = idxA, bv = idxB;
-    } else {
-      av = a[key] || 0;
-      bv = b[key] || 0;
-    }
-    if (av < bv) return -dir;
-    if (av > bv) return dir;
+  
+  const isString = key === 'name' || key === 'code';
+  allShortages.sort((a, b) => {
+    const av = isString ? (a[key] || '').toLowerCase() : (a[key] || 0);
+    const bv = isString ? (b[key] || '').toLowerCase() : (b[key] || 0);
+    if (av < bv) return -currentSort.dir;
+    if (av > bv) return currentSort.dir;
     return 0;
   });
-  renderTable(filteredShortages);
-  // تحديث مؤشرات الأعمدة (اختياري)
-  document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
-  const activeTh = Array.from(document.querySelectorAll('th')).find(th => th.textContent.includes(currentSort.key === 'rank' ? '#' : currentSort.key));
-  if (activeTh) activeTh.classList.add('sorted');
+  renderTable(allShortages);
 }
 
-/* ------------------------------------------------------------
-   دوال مساعدة
------------------------------------------------------------- */
-function fmt(v) { return (parseFloat(v) || 0).toLocaleString('ar-SY', { maximumFractionDigits: 2 }); }
-function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(v) { return (parseFloat(v) || 0).toLocaleString('ar-SY', { maximumFractionDigits: 0 }); }
+function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 document.getElementById('load-btn').onclick = loadAllData;
 </script>
