@@ -5,86 +5,101 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>تقرير نواقص المخزون</title>
 <style>
-* { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:'Segoe UI',Tahoma,Arial,sans-serif; background:#f0f4f8; color:#1a202c; min-height:100vh; padding:20px; direction:rtl; }
-h1 { font-size:22px; font-weight:700; margin-bottom:4px; }
-.subtitle { font-size:13px; color:#718096; margin-bottom:20px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh;padding:20px;direction:rtl}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.subtitle{font-size:13px;color:#718096;margin-bottom:20px}
 
-.ctrl-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 18px; margin-bottom:16px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
-.load-btn { padding:9px 22px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:700; background:#3182ce; color:#fff; transition:background .15s; white-space:nowrap; }
-.load-btn:hover:not(:disabled) { background:#2b6cb0; }
-.load-btn:disabled { opacity:.5; cursor:not-allowed; }
-.prog-wrap { flex:1; min-width:80px; height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden; }
-.prog-bar { height:100%; width:0%; background:#3182ce; border-radius:3px; transition:width .3s; }
-.status-txt { font-size:12px; color:#718096; white-space:nowrap; }
+/* ── control bar ── */
+.ctrl-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;margin-bottom:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.load-btn{padding:9px 22px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;background:#3182ce;color:#fff;transition:background .15s;white-space:nowrap}
+.load-btn:hover:not(:disabled){background:#2b6cb0}
+.load-btn:disabled{opacity:.5;cursor:not-allowed}
+.period-select{padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;background:#f7fafc;cursor:pointer}
+.prog-wrap{flex:1;min-width:80px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}
+.prog-bar{height:100%;width:0%;background:#3182ce;border-radius:3px;transition:width .3s}
+.status-txt{font-size:12px;color:#718096;white-space:nowrap}
 
-.steps-box { background:#ebf8ff; border:1px solid #bee3f8; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:12px; display:none; }
-.step { padding:3px 0; color:#4a5568; }
-.step.done { color:#276749; }
-.step.active { color:#2b6cb0; font-weight:700; }
+/* ── steps ── */
+.steps-box{background:#ebf8ff;border:1px solid #bee3f8;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;display:none}
+.step{padding:3px 0;color:#4a5568}
+.step.done{color:#276749}
+.step.active{color:#2b6cb0;font-weight:700}
+.step.pending{color:#a0aec0}
 
-.cards { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px; }
-.card { flex:1; min-width:140px; background:#fff; border-radius:12px; padding:16px 18px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,.06); }
-.card-label { font-size:11px; color:#718096; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
-.card-value { font-size:24px; font-weight:800; color:#2d3748; }
-.red { color:#e53e3e; } .orange { color:#dd6b20; } .blue { color:#3182ce; }
+/* ── error ── */
+.err-box{color:#c53030;background:#fff5f5;border:1px solid #fed7d7;border-radius:10px;padding:14px 18px;font-size:13px;margin-bottom:16px;display:none}
 
-.search-bar { display:flex; gap:10px; align-items:center; margin-bottom:16px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px 16px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
-.search-bar input { flex:1; border:none; outline:none; font-size:14px; background:transparent; direction:rtl; }
+/* ── summary cards ── */
+.cards{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.card{flex:1;min-width:140px;background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-label{font-size:11px;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.card-value{font-size:24px;font-weight:800;color:#2d3748}
+.red{color:#e53e3e}.orange{color:#dd6b20}.blue{color:#3182ce}
 
-.table-wrap { background:#fff; border-radius:12px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,.06); overflow:hidden; }
-table { width:100%; border-collapse:collapse; font-size:13px; }
-thead { background:#f7fafc; }
-th { padding:12px 16px; text-align:right; font-weight:700; font-size:11px; color:#4a5568; text-transform:uppercase; letter-spacing:.5px; border-bottom:2px solid #e2e8f0; white-space:nowrap; cursor:pointer; user-select:none; }
-th:hover { background:#edf2f7; }
-td { padding:11px 16px; border-bottom:1px solid #f0f4f8; vertical-align:middle; }
-tr:last-child td { border-bottom:none; }
-tr:hover td { background:#f7fafc; }
+/* ── search ── */
+.search-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.search-bar input{flex:1;border:none;outline:none;font-size:14px;background:transparent;direction:rtl}
 
-.badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:700; }
-.badge.critical { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
-.badge.warning  { background:#fffaf0; color:#c05621; border:1px solid #fbd38d; }
-.badge.low      { background:#fffff0; color:#975a16; border:1px solid #faf089; }
+/* ── table ── */
+.table-wrap{background:#fff;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:#f7fafc}
+th{padding:12px 16px;text-align:right;font-weight:700;font-size:11px;color:#4a5568;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e2e8f0;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{background:#edf2f7}
+td{padding:11px 16px;border-bottom:1px solid #f0f4f8;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f7fafc}
 
-.bar-wrap { width:70px; height:6px; background:#e2e8f0; border-radius:3px; display:inline-block; vertical-align:middle; margin-left:8px; }
-.bar-fill { height:100%; border-radius:3px; background:#e53e3e; }
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.badge.critical{background:#fff5f5;color:#c53030;border:1px solid #fed7d7}
+.badge.warning{background:#fffaf0;color:#c05621;border:1px solid #fbd38d}
+.badge.low{background:#fffff0;color:#975a16;border:1px solid #faf089}
 
-.empty-state { text-align:center; padding:60px 20px; color:#a0aec0; }
-.empty-icon { font-size:48px; margin-bottom:12px; }
-.err-box { color:#c53030; background:#fff5f5; border:1px solid #fed7d7; border-radius:10px; padding:14px 18px; font-size:13px; margin-bottom:16px; }
-.footer-info { font-size:11px; color:#a0aec0; text-align:left; padding:10px 16px; border-top:1px solid #f0f4f8; }
+.bar-wrap{width:70px;height:6px;background:#e2e8f0;border-radius:3px;display:inline-block;vertical-align:middle;margin-left:8px}
+.bar-fill{height:100%;border-radius:3px;background:#e53e3e}
+
+.empty-state{text-align:center;padding:60px 20px;color:#a0aec0}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.footer-info{font-size:11px;color:#a0aec0;text-align:left;padding:10px 16px;border-top:1px solid #f0f4f8}
 </style>
 </head>
 <body>
 
 <h1>📦 تقرير نواقص المخزون</h1>
-<p class="subtitle">يحسب المخزون الفعلي = إجمالي المشتريات − إجمالي المبيعات · ثم يقارن بمبيعات آخر 30 يوم</p>
+<p class="subtitle">يقرأ المخزون الحالي (QtyOnHand) مباشرة من Manager · ويقارنه بمبيعات الفترة المختارة</p>
 
 <div class="ctrl-bar">
   <button class="load-btn" id="load-btn" onclick="loadAllData()">⬇ تحميل البيانات</button>
+  <select class="period-select" id="period-select">
+    <option value="7">آخر 7 أيام</option>
+    <option value="14">آخر 14 يوم</option>
+    <option value="30" selected>آخر 30 يوم</option>
+    <option value="60">آخر 60 يوم</option>
+    <option value="90">آخر 90 يوم</option>
+  </select>
   <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
   <span class="status-txt" id="status-txt">اضغط تحميل لجلب البيانات من Manager</span>
 </div>
 
 <div class="steps-box" id="steps-box">
-  <div class="step" id="s1">⏳ 1. تحميل أصناف المخزون...</div>
-  <div class="step" id="s2">⏳ 2. تحميل فواتير المبيعات (كل الوقت)...</div>
-  <div class="step" id="s3">⏳ 3. تحميل فواتير الشراء (كل الوقت)...</div>
-  <div class="step" id="s4">⏳ 4. حساب المخزون الفعلي والنواقص...</div>
+  <div class="step pending" id="s1">⏳ 1. تحميل أصناف المخزون مع الكميات الحالية...</div>
+  <div class="step pending" id="s2">⏳ 2. تحميل بنود فواتير المبيعات للفترة المطلوبة...</div>
+  <div class="step pending" id="s3">⏳ 3. تحليل البيانات وإيجاد النواقص...</div>
 </div>
 
-<div class="err-box" id="err-box" style="display:none"></div>
+<div class="err-box" id="err-box"></div>
 
 <div class="cards" id="cards" style="display:none">
   <div class="card"><div class="card-label">منتجات ناقصة</div><div class="card-value red" id="c-total">0</div></div>
-  <div class="card"><div class="card-label">أشد نقص</div><div class="card-value orange" id="c-max">0</div></div>
-  <div class="card"><div class="card-label">إجمالي النقص (وحدات)</div><div class="card-value red" id="c-sum">0</div></div>
-  <div class="card"><div class="card-label">فترة التحليل</div><div class="card-value blue" style="font-size:16px">آخر 30 يوم</div></div>
+  <div class="card"><div class="card-label">أشد نقص (وحدة)</div><div class="card-value orange" id="c-max">0</div></div>
+  <div class="card"><div class="card-label">إجمالي النقص</div><div class="card-value red" id="c-sum">0</div></div>
+  <div class="card"><div class="card-label">فترة التحليل</div><div class="card-value blue" style="font-size:16px" id="c-period">—</div></div>
 </div>
 
 <div class="search-bar" id="search-bar" style="display:none">
   <span>🔍</span>
-  <input type="text" id="search-input" placeholder="ابحث عن منتج..." oninput="filterTable()">
+  <input type="text" id="search-input" placeholder="ابحث باسم المنتج أو الكود..." oninput="filterTable()">
 </div>
 
 <div class="table-wrap" id="table-wrap" style="display:none">
@@ -92,11 +107,12 @@ tr:hover td { background:#f7fafc; }
     <thead>
       <tr>
         <th>#</th>
-        <th onclick="sortBy('name')">اسم المنتج</th>
-        <th onclick="sortBy('stock')">المخزون الحالي</th>
-        <th onclick="sortBy('sold30')">مبيعات 30 يوم</th>
-        <th onclick="sortBy('shortage')">⬇ النقص</th>
-        <th>مستوى النقص</th>
+        <th onclick="sortBy('name')">اسم المنتج ▲▼</th>
+        <th onclick="sortBy('code')">الكود</th>
+        <th onclick="sortBy('stock')">المخزون الحالي ▲▼</th>
+        <th onclick="sortBy('sold')">مبيعات الفترة ▲▼</th>
+        <th onclick="sortBy('shortage')">⬇ النقص ▲▼</th>
+        <th>مستوى الخطر</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -105,9 +121,9 @@ tr:hover td { background:#f7fafc; }
 </div>
 
 <script>
-/* ════════════════════════════════
-   postMessage — DO NOT MODIFY
-════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   postMessage bridge — يرسل طلب لـ Manager
+════════════════════════════════════════════ */
 function postMessageWithResponse(message) {
   return new Promise((resolve, reject) => {
     const requestId = crypto.randomUUID();
@@ -127,100 +143,126 @@ function postMessageWithResponse(message) {
   });
 }
 
-/* ════════════════════════════════
-   fetchAllPages
-   Follows _links.next.href for pagination
-   Manager returns max 50 records/page
-════════════════════════════════ */
-async function fetchAllPages(endpoint, onProgress) {
+/* ═══════════════════════════════════════════
+   fetchAllPages — يتبع pagination تلقائياً
+   Manager يُرجع max 50 سجل لكل صفحة
+   يستخدم skip للتنقل بين الصفحات
+════════════════════════════════════════════ */
+async function fetchAllPages(endpoint, params, onProgress) {
   const all = [];
-  let path = `/api4/${endpoint}?PageSize=50`;
-  let page = 0;
+  let skip = 0;
+  const pageSize = 50;
 
-  do {
+  while (true) {
+    const queryParams = new URLSearchParams({ ...params, pageSize, skip }).toString();
+    const path = `/api4/${endpoint}?${queryParams}`;
     const data = await postMessageWithResponse({ type: 'api-request', method: 'GET', path });
-    const items = Array.isArray(data) ? data : (data.items || data.data || []);
+
+    // Manager يُرجع مصفوفة مباشرة أو كائن يحوي items/data
+    const items = Array.isArray(data) ? data
+                : Array.isArray(data?.items) ? data.items
+                : Array.isArray(data?.data) ? data.data
+                : [];
+
+    if (items.length === 0) break;
     all.push(...items);
-    // Manager.io puts next page link in _links.next.href
-    path = data?._links?.next?.href || null;
-    page++;
-    if (onProgress) onProgress(all.length, page);
-    if (page >= 5000) break;
-  } while (path);
+    if (onProgress) onProgress(all.length);
+
+    // إذا رجع أقل من pageSize فهذه آخر صفحة
+    if (items.length < pageSize) break;
+    skip += pageSize;
+
+    // حماية من الحلقة اللانهائية
+    if (skip > 200000) break;
+  }
 
   return all;
 }
 
-/* ════════════════════════════════
+/* ═══════════════════════════════════════════
    State
-════════════════════════════════ */
+════════════════════════════════════════════ */
 let allShortages = [];
-let sortDir = { key: 'shortage', dir: -1 };
+let currentSort = { key: 'shortage', dir: -1 };
 
-/* ════════════════════════════════
-   Step helpers
-════════════════════════════════ */
-function step(n, state, extra) {
+/* ═══════════════════════════════════════════
+   Step UI helpers
+════════════════════════════════════════════ */
+function setStep(n, state, extra) {
   const el = document.getElementById('s' + n);
-  const labels = ['', 'أصناف المخزون', 'فواتير المبيعات', 'فواتير الشراء', 'الحساب والنتائج'];
+  const texts = {
+    1: 'أصناف المخزون مع الكميات الحالية',
+    2: 'بنود فواتير المبيعات',
+    3: 'تحليل البيانات وإيجاد النواقص'
+  };
+  const icon = state === 'done' ? '✅' : state === 'active' ? '🔄' : '⏳';
   el.className = 'step ' + state;
-  el.textContent = (state === 'done' ? '✅' : '⏳') + ' ' + n + '. ' + labels[n] + (extra ? ' — ' + extra : '');
+  el.textContent = `${icon} ${n}. ${texts[n]}${extra ? ' — ' + extra : ''}`;
 }
 
-/* ════════════════════════════════
-   Main
-════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   Main loader
+════════════════════════════════════════════ */
 async function loadAllData() {
-  const btn = document.getElementById('load-btn');
-  const bar = document.getElementById('prog-bar');
-  const status = document.getElementById('status-txt');
-  const errBox = document.getElementById('err-box');
+  const btn      = document.getElementById('load-btn');
+  const bar      = document.getElementById('prog-bar');
+  const status   = document.getElementById('status-txt');
+  const errBox   = document.getElementById('err-box');
+  const days     = parseInt(document.getElementById('period-select').value, 10);
 
+  // Reset UI
   btn.disabled = true;
-  btn.textContent = 'جاري التحميل...';
+  btn.textContent = '⏳ جاري التحميل...';
   bar.style.width = '2%';
   errBox.style.display = 'none';
   document.getElementById('steps-box').style.display = 'block';
   document.getElementById('cards').style.display = 'none';
   document.getElementById('search-bar').style.display = 'none';
   document.getElementById('table-wrap').style.display = 'none';
-  [1,2,3,4].forEach(n => step(n,'pending'));
+  [1, 2, 3].forEach(n => setStep(n, 'pending'));
 
   try {
-    // 1. Inventory item names
-    step(1, 'active');
-    const invItems = await fetchAllPages('inventory-item-batch', (loaded, pg) => {
-      status.textContent = `أصناف المخزون: ${loaded} (صفحة ${pg})`;
-      bar.style.width = Math.min(20, 2 + pg * 2) + '%';
-    });
-    step(1, 'done', invItems.length + ' صنف');
-    bar.style.width = '22%';
+    /* ── STEP 1: Inventory items with QtyOnHand ── */
+    setStep(1, 'active');
+    const invItems = await fetchAllPages(
+      'inventory-items',
+      { fields: ['ItemCode', 'ItemName', 'UnitName', 'QtyOnHand'].join(',') },
+      cnt => {
+        status.textContent = `أصناف المخزون: ${cnt}`;
+        bar.style.width = Math.min(35, 2 + cnt / 5) + '%';
+      }
+    );
+    setStep(1, 'done', `${invItems.length} صنف`);
+    bar.style.width = '38%';
 
-    // 2. Sales invoices — ALL time (for stock calc) + last 30d (for shortage)
-    step(2, 'active');
-    const salesInvs = await fetchAllPages('sales-invoice-batch', (loaded, pg) => {
-      status.textContent = `فواتير المبيعات: ${loaded} (صفحة ${pg})`;
-      bar.style.width = Math.min(55, 22 + pg * 0.4) + '%';
-    });
-    step(2, 'done', salesInvs.length + ' فاتورة');
-    bar.style.width = '55%';
+    /* ── STEP 2: Sales invoice lines for selected period ── */
+    setStep(2, 'active');
+    const now    = new Date();
+    const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    // Format: YYYY-MM-DD
+    const fromDate = cutoff.toISOString().split('T')[0];
 
-    // 3. Purchase invoices — ALL time (for stock calc)
-    step(3, 'active');
-    const purchInvs = await fetchAllPages('purchase-invoice-batch', (loaded, pg) => {
-      status.textContent = `فواتير الشراء: ${loaded} (صفحة ${pg})`;
-      bar.style.width = Math.min(85, 55 + pg * 0.5) + '%';
-    });
-    step(3, 'done', purchInvs.length + ' فاتورة');
+    // نطلب بنود المبيعات مع الفلترة بالتاريخ إن أمكن
+    // Manager api4 يدعم فلترة بـ term وsorting لكن ليس date range مباشرة
+    // نحمّل كل البنود ونفلتر محلياً بـ IssueDate
+    const salesLines = await fetchAllPages(
+      'sales-invoice-lines',
+      { fields: ['IssueDate', 'Item', 'Qty'].join(','), sortBy: 'IssueDate', sortByDesc: true },
+      cnt => {
+        status.textContent = `بنود المبيعات: ${cnt}`;
+        bar.style.width = Math.min(85, 38 + cnt / 10) + '%';
+      }
+    );
+    setStep(2, 'done', `${salesLines.length} سطر`);
     bar.style.width = '88%';
 
-    // 4. Analyze
-    step(4, 'active');
-    status.textContent = 'جاري الحساب...';
-    analyze(invItems, salesInvs, purchInvs);
-    step(4, 'done');
+    /* ── STEP 3: Analyze ── */
+    setStep(3, 'active');
+    status.textContent = 'جاري التحليل...';
+    analyze(invItems, salesLines, cutoff, days);
+    setStep(3, 'done');
     bar.style.width = '100%';
-    status.textContent = `✓ ${invItems.length} صنف · ${salesInvs.length} فاتورة مبيعات · ${purchInvs.length} فاتورة شراء`;
+    status.textContent = `✓ ${invItems.length} صنف · ${salesLines.length} سطر مبيعات · آخر ${days} يوم`;
     btn.textContent = '↺ تحديث';
     btn.disabled = false;
 
@@ -230,113 +272,139 @@ async function loadAllData() {
     btn.textContent = '↺ إعادة المحاولة';
     btn.disabled = false;
     errBox.style.display = 'block';
-    errBox.innerHTML = `⚠ ${esc(err.message)}<br><small>تأكد أن الإضافة تعمل داخل Manager.io</small>`;
+    errBox.innerHTML = `⚠ <strong>${esc(err.message)}</strong><br>
+      <small>تأكد أن الإضافة تعمل داخل Manager.io · <a href="https://forum.manager.io" target="_blank">المنتدى للمساعدة</a></small>`;
+    document.getElementById('steps-box').style.display = 'none';
   }
 }
 
-/* ════════════════════════════════
-   Analysis logic
-   currentStock(item) = Σ purchased qty − Σ sold qty  (all time)
-   shortage(item)     = sold30d − currentStock  (only if > 0)
-════════════════════════════════ */
-function analyze(invItems, salesInvs, purchInvs) {
+/* ═══════════════════════════════════════════
+   analyze
+   - invItems: كل صنف يحمل QtyOnHand من Manager
+   - salesLines: بنود المبيعات (كل سطر: IssueDate, Item key, Qty)
+   - cutoff: تاريخ بداية الفترة
+════════════════════════════════════════════ */
+function analyze(invItems, salesLines, cutoff, days) {
 
-  const now    = new Date();
-  const cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  // item key → { name, unit, code }
-  const info = {};
+  /* خريطة key → { name, code, unit, stock } */
+  const itemMap = {};
   for (const r of invItems) {
-    const k = r?.key;
-    const it = r?.item || r;
-    if (!k) continue;
-    info[k] = { name: it?.itemName || it?.nameWithCode || k, unit: it?.unitName || '', code: it?.itemCode || '' };
+    const key = r?.Key || r?.key;
+    if (!key) continue;
+    itemMap[key] = {
+      name:  r?.ItemName  || r?.itemName  || key,
+      code:  r?.ItemCode  || r?.itemCode  || '',
+      unit:  r?.UnitName  || r?.unitName  || '',
+      stock: parseFloat(r?.QtyOnHand ?? r?.qtyOnHand ?? 0) || 0
+    };
   }
 
-  // Σ purchased per item (all time)
-  // purchase-invoice-batch lines use field "inventoryItem" or "item" for the item key
-  const bought = {};
-  for (const r of purchInvs) {
-    const inv = r?.item || r;
-    for (const line of (inv?.lines || [])) {
-      const k = line?.inventoryItem || line?.item;
-      if (!k) continue;
-      bought[k] = (bought[k] || 0) + (parseFloat(line?.qty) || 0);
-    }
+  /* مجموع المبيعات للفترة لكل صنف */
+  const soldInPeriod = {};
+  for (const line of salesLines) {
+    // IssueDate قد يكون نصاً "2024-03-15" أو timestamp
+    const rawDate = line?.IssueDate || line?.issueDate;
+    if (!rawDate) continue;
+    const dt = new Date(rawDate);
+    if (isNaN(dt) || dt < cutoff) continue;
+
+    // Item هو المفتاح (GUID) للصنف
+    const key = line?.Item || line?.item;
+    if (!key) continue;
+
+    const qty = parseFloat(line?.Qty || line?.qty) || 0;
+    soldInPeriod[key] = (soldInPeriod[key] || 0) + qty;
   }
 
-  // Σ sold per item: all-time + last-30d
-  const soldAll = {};
-  const sold30  = {};
-  for (const r of salesInvs) {
-    const inv  = r?.item || r;
-    const dt   = inv?.issueDate ? new Date(inv.issueDate) : null;
-    const in30 = dt && dt >= cutoff;
-    for (const line of (inv?.lines || [])) {
-      const k = line?.inventoryItem || line?.item;
-      if (!k) continue;
-      const q = parseFloat(line?.qty) || 0;
-      soldAll[k] = (soldAll[k] || 0) + q;
-      if (in30) sold30[k] = (sold30[k] || 0) + q;
-    }
-  }
-
-  // Find shortages
+  /* بناء قائمة النواقص */
   const results = [];
-  for (const k of Object.keys(sold30)) {
-    const s30      = sold30[k] || 0;
-    if (s30 === 0) continue;
-    const purchased = bought[k]   || 0;
-    const soldTotal = soldAll[k]  || 0;
-    const stock     = Math.max(0, purchased - soldTotal);
-    const shortage  = s30 - stock;
+  for (const [key, sold] of Object.entries(soldInPeriod)) {
+    if (sold <= 0) continue;
+    const item = itemMap[key];
+    if (!item) continue; // صنف غير موجود في inventory-items (غير مخزني)
+    const shortage = sold - item.stock;
     if (shortage <= 0) continue;
-    const it = info[k] || { name: k, unit: '', code: '' };
-    results.push({ key:k, name:it.name, unit:it.unit, code:it.code, stock, purchased, soldTotal, sold30:s30, shortage });
+    results.push({
+      key,
+      name:     item.name,
+      code:     item.code,
+      unit:     item.unit,
+      stock:    item.stock,
+      sold,
+      shortage
+    });
   }
 
-  results.sort((a,b) => b.shortage - a.shortage);
+  results.sort((a, b) => b.shortage - a.shortage);
   allShortages = results;
-  renderAll(results, invItems.length, salesInvs.length, purchInvs.length);
+  renderAll(results, Object.keys(itemMap).length, salesLines.length, days);
 }
 
-/* ════════════════════════════════
+/* ═══════════════════════════════════════════
    Render
-════════════════════════════════ */
-function renderAll(data, ni, ns, np) {
+════════════════════════════════════════════ */
+function renderAll(data, ni, nlines, days) {
+  document.getElementById('c-period').textContent = `آخر ${days} يوم`;
+
   if (data.length === 0) {
     document.getElementById('table-wrap').style.display = 'block';
     document.getElementById('tbody').innerHTML =
-      `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">✅</div><p>لا توجد نواقص — المخزون كافٍ لمبيعات آخر 30 يوم</p></div></td></tr>`;
+      `<tr><td colspan="7">
+        <div class="empty-state">
+          <div class="empty-icon">✅</div>
+          <p>لا توجد نواقص — المخزون كافٍ لتغطية مبيعات آخر ${days} يوم</p>
+        </div>
+      </td></tr>`;
+    document.getElementById('cards').style.display = 'flex';
+    document.getElementById('c-total').textContent = '0';
+    document.getElementById('c-max').textContent   = '0';
+    document.getElementById('c-sum').textContent   = '0';
     return;
   }
 
-  document.getElementById('c-total').textContent = data.length.toLocaleString();
-  document.getElementById('c-max').textContent   = fmt(data[0].shortage) + ' ' + (data[0].unit||'');
-  document.getElementById('c-sum').textContent   = fmt(data.reduce((s,r)=>s+r.shortage,0));
+  document.getElementById('c-total').textContent = data.length.toLocaleString('ar-SY');
+  document.getElementById('c-max').textContent   = fmt(data[0].shortage) + ' ' + (data[0].unit || '');
+  document.getElementById('c-sum').textContent   = fmt(data.reduce((s, r) => s + r.shortage, 0));
   document.getElementById('cards').style.display      = 'flex';
   document.getElementById('search-bar').style.display = 'flex';
   document.getElementById('table-wrap').style.display = 'block';
 
   renderTable(data);
   document.getElementById('footer-info').textContent =
-    `أصناف: ${ni} · مبيعات: ${ns} فاتورة · مشتريات: ${np} فاتورة · آخر تحديث: ${new Date().toLocaleString('ar-SY')}`;
+    `أصناف المخزون: ${ni} · بنود المبيعات: ${nlines} · آخر تحديث: ${new Date().toLocaleString('ar-SY')}`;
 }
 
 function renderTable(data) {
   const maxS = allShortages[0]?.shortage || 1;
   document.getElementById('tbody').innerHTML = data.length === 0
-    ? `<tr><td colspan="6" style="text-align:center;padding:30px;color:#a0aec0">لا نتائج</td></tr>`
-    : data.map((r,i) => {
+    ? `<tr><td colspan="7" style="text-align:center;padding:30px;color:#a0aec0">لا نتائج مطابقة للبحث</td></tr>`
+    : data.map((r, i) => {
         const pct   = Math.min(100, Math.round(r.shortage / maxS * 100));
-        const level = r.shortage >= maxS*0.6 ? 'critical' : r.shortage >= maxS*0.3 ? 'warning' : 'low';
-        const lbl   = level==='critical' ? '🔴 حرج' : level==='warning' ? '🟠 تحذير' : '🟡 منخفض';
+        const level = r.shortage >= maxS * 0.6 ? 'critical'
+                    : r.shortage >= maxS * 0.25 ? 'warning'
+                    : 'low';
+        const lbl   = level === 'critical' ? '🔴 حرج'
+                    : level === 'warning'  ? '🟠 تحذير'
+                    : '🟡 منخفض';
         return `<tr>
-          <td style="color:#a0aec0;font-weight:600">${i+1}</td>
-          <td style="font-weight:600">${esc(r.name)}<br><span style="font-size:10px;color:#a0aec0">${esc(r.code)}</span></td>
-          <td><span style="font-weight:700;color:${r.stock<=0?'#e53e3e':'#2d3748'}">${fmt(r.stock)}</span> <span style="font-size:11px;color:#a0aec0">${esc(r.unit)}</span></td>
-          <td><span style="font-weight:700;color:#3182ce">${fmt(r.sold30)}</span> <span style="font-size:11px;color:#a0aec0">${esc(r.unit)}</span></td>
-          <td><div style="display:flex;align-items:center;gap:6px"><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div><span style="font-weight:800;color:#e53e3e">${fmt(r.shortage)}</span> <span style="font-size:11px;color:#a0aec0">${esc(r.unit)}</span></div></td>
+          <td style="color:#a0aec0;font-weight:600">${i + 1}</td>
+          <td style="font-weight:600">${esc(r.name)}</td>
+          <td style="font-size:11px;color:#718096">${esc(r.code)}</td>
+          <td>
+            <span style="font-weight:700;color:${r.stock <= 0 ? '#e53e3e' : '#2d3748'}">${fmt(r.stock)}</span>
+            <span style="font-size:11px;color:#a0aec0"> ${esc(r.unit)}</span>
+          </td>
+          <td>
+            <span style="font-weight:700;color:#3182ce">${fmt(r.sold)}</span>
+            <span style="font-size:11px;color:#a0aec0"> ${esc(r.unit)}</span>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div>
+              <span style="font-weight:800;color:#e53e3e">${fmt(r.shortage)}</span>
+              <span style="font-size:11px;color:#a0aec0">${esc(r.unit)}</span>
+            </div>
+          </td>
           <td><span class="badge ${level}">${lbl}</span></td>
         </tr>`;
       }).join('');
@@ -344,21 +412,35 @@ function renderTable(data) {
 
 function filterTable() {
   const q = document.getElementById('search-input').value.trim().toLowerCase();
-  renderTable(q ? allShortages.filter(r => r.name.toLowerCase().includes(q)||(r.code||'').toLowerCase().includes(q)) : allShortages);
+  if (!q) { renderTable(allShortages); return; }
+  renderTable(allShortages.filter(r =>
+    r.name.toLowerCase().includes(q) || (r.code || '').toLowerCase().includes(q)
+  ));
 }
 
 function sortBy(key) {
-  if (sortDir.key===key) sortDir.dir*=-1; else { sortDir.key=key; sortDir.dir=-1; }
-  const sorted = [...allShortages].sort((a,b) => {
-    const isStr = key==='name'||key==='code';
-    const av=isStr?(a[key]||''):(a[key]||0), bv=isStr?(b[key]||''):(b[key]||0);
-    return av<bv ? -sortDir.dir : av>bv ? sortDir.dir : 0;
+  if (currentSort.key === key) {
+    currentSort.dir *= -1;
+  } else {
+    currentSort.key = key;
+    currentSort.dir = key === 'name' || key === 'code' ? 1 : -1;
+  }
+  const isStr = key === 'name' || key === 'code';
+  const sorted = [...allShortages].sort((a, b) => {
+    const av = isStr ? (a[key] || '') : (a[key] || 0);
+    const bv = isStr ? (b[key] || '') : (b[key] || 0);
+    return av < bv ? -currentSort.dir : av > bv ? currentSort.dir : 0;
   });
-  allShortages=sorted; renderTable(sorted);
+  allShortages = sorted;
+  renderTable(sorted);
 }
 
-function fmt(v) { return (parseFloat(v)||0).toLocaleString('ar-SY',{maximumFractionDigits:2}); }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(v) {
+  return (parseFloat(v) || 0).toLocaleString('ar-SY', { maximumFractionDigits: 2 });
+}
+function esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 </script>
 </body>
 </html>
